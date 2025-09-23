@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	pb "user-profile-service/proto"
+	pb "github.com/archit-batra/user-profile-service/proto"
 	"google.golang.org/grpc"
 )
 

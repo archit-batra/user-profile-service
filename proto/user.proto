@@ -1,18 +1,16 @@
-```proto
 syntax = "proto3";
 
 package user;
 
-option go_package = "user-profile-service/proto";
+// Relative path, keeps files inside project root
+option go_package = "/proto;proto";
 
-// Define the User message
 message User {
   string id = 1;
   string name = 2;
   string email = 3;
 }
 
-// Request/Response messages
 message GetUserRequest {
   string id = 1;
 }
@@ -21,7 +19,6 @@ message GetUserResponse {
   User user = 1;
 }
 
-// Service definition
 service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }
