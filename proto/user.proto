@@ -19,6 +19,13 @@ message GetUserResponse {
   User user = 1;
 }
 
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  User user = 1;
+}
+
 service UserService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (stream ListUsersResponse);
 }

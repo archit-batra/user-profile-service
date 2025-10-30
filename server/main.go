@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net"
+	"time"
 
 	pb "github.com/archit-batra/user-profile-service/proto"
 	"google.golang.org/grpc"
@@ -40,6 +41,20 @@ func (s *server) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.GetUs
 		log.Printf("Returning user: %v", user)
 		return &pb.GetUserResponse{User: user}, nil
 	}
+}
+
+// ListUsers streams multiple user records to the client
+func (s *server) ListUsers(req *pb.ListUsersRequest, stream pb.UserService_ListUsersServer) error {
+	log.Println("Streaming all users to client...")
+	for _, user := range users {
+		// Simulate delay for streaming effect
+		time.Sleep(time.Millisecond * 500)
+		if err := stream.Send(&pb.ListUsersResponse{User: user}); err != nil {
+			return err
+		}
+	}
+	log.Println("Finished streaming users")
+	return nil
 }
 
 func main() {
