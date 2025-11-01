@@ -2,45 +2,59 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"time"
 
 	pb "github.com/archit-batra/user-profile-service/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	// Connect to server
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
+	// Create a client connection using the modern API.
+	conn, err := grpc.NewClient(
+		"localhost:50051",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
-		log.Fatalf("Did not connect: %v", err)
+		log.Fatalf("Failed to create gRPC client: %v", err)
 	}
+	// ClientConn implements io.Closer; close when done
 	defer conn.Close()
 
 	client := pb.NewUserServiceClient(conn)
 
-	// Call GetUser API
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// Unary call: GetUser with RPC timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	res, err := client.GetUser(ctx, &pb.GetUserRequest{Id: "1"})
 	if err != nil {
 		log.Fatalf("Could not get user: %v", err)
 	}
+	log.Printf("Unary Response: %v", res.GetUser())
 
-	log.Printf("User: %v", res.GetUser())
+	// Server streaming: ListUsersStream with its own timeout
+	streamCtx, streamCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer streamCancel()
 
-	// Call ListUsers API
-	stream, err := client.ListUsers(context.Background(), &pb.ListUsersRequest{})
+	stream, err := client.ListUsersStream(streamCtx, &pb.ListUsersRequest{})
 	if err != nil {
-		log.Fatalf("Error calling ListUsers: %v", err)
+		log.Fatalf("Error calling ListUsersStream: %v", err)
 	}
 
+	log.Println("Streaming all users:")
 	for {
-		resp, err := stream.Recv()
-		if err != nil {
+		user, err := stream.Recv()
+		if err == io.EOF {
+			// stream finished normally
 			break
 		}
-		log.Printf("Received user: %v", resp.User)
+		if err != nil {
+			log.Fatalf("Error receiving stream: %v", err)
+		}
+		log.Printf("Received user: %v", user)
 	}
+	log.Println("Stream ended.")
 }
